@@ -28,10 +28,8 @@ import java.util.regex.Pattern;
 public class TelegramBotUpdatesListener implements UpdatesListener {
 
     private final Logger logger = LoggerFactory.getLogger(TelegramBotUpdatesListener.class);
-    private final Pattern pattern = Pattern.compile(
-            "(\\d{1,2}\\.\\d{1,2}\\.\\d{1,2}\\.\\d{4} \\d{1,2}:\\d{2}\\)\\s+([А-я\\d\\s.,!?:]+))");
-    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(
-            "dd.MM.yyyy HH:mm");
+    private final Pattern pattern = Pattern.compile("(\\d{1,2}\\.\\d{1,2}\\.\\d{4} \\d{1,2}:\\d{2})\\s+([А-я\\d\\s.,!?:]+)");
+    private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
     private final TelegramBot telegramBot;
     private final NotificationService notificationService;
 
@@ -49,37 +47,38 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
     @Override
     public int process(List<Update> updates) {
         try {
-            updates.forEach(update ->{
-                logger.info("Handles update:{}", update);
-                Message message = update.message();
-                Long chatId = message.chat().id();
-                String text = message.text();
+            updates.stream()
+                    .filter(update -> update.message() != null)
+                    .forEach(update -> {
+                        logger.info("Handles update: {}", update);
+                        Message message = update.message();
+                        Long chatId = message.chat().id();
+                        String text = message.text();
 
-                if ("/start".equals(text)){
-                    SendMessage sendMessage = new SendMessage(chatId,
-                    """
-                    Привет! Отправь домашнее задание в формате 18.07.2023 в 21.00 Сдать домашку!
-                    """);
+                        if ("/start".equals(text)) {
+                            SendMessage sendMessage =new SendMessage(chatId, "Привет! Я помогу запланировать задачу. " +
+                                    "ПожалуйстаБ отправьте её в следующем формате: 18.07.2023 22:00");
+                        } else if (text != null) {
+                            Matcher matcher = pattern.matcher(text);
+                            if (matcher.find()) {
+                                LocalDateTime dateTime = parse(matcher.group(1));
 
-                }else if (text !=null) {
-                    Matcher matcher = pattern.matcher(text);
-                    if (matcher.find()) {
-                        LocalDateTime dateTime = parse(matcher.group(1));
-                        if (Objects.isNull(dateTime)) {
-                            sendMessage(chatId, "Некорректный формат даты и/или времени");
-                        } else {
-                            String txt = matcher.group(2);
-                            NotificationTask notificationTask = new NotificationTask();
-                            notificationTask.setChatId(chatId);
-                            notificationTask.setMessage(txt);
-                            notificationTask.setNotificationDateTime(dateTime);
-                            notificationService.save(notificationTask);
+                                if (Objects.isNull(dateTime)) {
+                                    sendMessage(chatId, "Некорректный формат даты и/или времени!");
+                                } else {
+                                    String txt = matcher.group(2);
+                                    NotificationTask notificationTask = new NotificationTask();
+                                    notificationTask.setChatId(chatId);
+                                    notificationTask.setMessage(txt);
+                                    notificationTask.setNotificationDateTime(dateTime);
+                                    notificationService.save(notificationTask);
+                                    sendMessage(chatId, "Задача успешно запланирована!");
+                                }
+                            } else {
+                                sendMessage(chatId, "Некорректный формат сообщения!");
+                            }
                         }
-                }else {
-                        sendMessage(chatId, "Некорректный формат сообщения!");
-                    }
-                }
-            });
+                    });
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
