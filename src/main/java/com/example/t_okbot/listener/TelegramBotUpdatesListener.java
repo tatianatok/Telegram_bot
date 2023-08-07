@@ -57,7 +57,8 @@ public class TelegramBotUpdatesListener implements UpdatesListener {
 
                         if ("/start".equals(text)) {
                             SendMessage sendMessage =new SendMessage(chatId, "Привет! Я помогу запланировать задачу. " +
-                                    "ПожалуйстаБ отправьте её в следующем формате: 18.07.2023 22:00");
+                                    "Пожалуйста, отправьте её в следующем формате: 18.07.2023 22:00");
+                            SendResponse sendResponse = telegramBot.execute(sendMessage);
                         } else if (text != null) {
                             Matcher matcher = pattern.matcher(text);
                             if (matcher.find()) {
