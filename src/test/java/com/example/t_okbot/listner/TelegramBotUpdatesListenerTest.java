@@ -38,7 +38,7 @@ public class TelegramBotUpdatesListenerTest {
 
     @Test
     public void handleStartTest() throws URISyntaxException, IOException {
-        String json = Files.readString(Path.of(TelegramBotUpdatesListenerTest.class.getResource("update.json")
+        String json = Files.readString(Path.of(getClass().getClassLoader().getResource("update.json")
                 .toURI()));
         Update update= BotUtils.fromJson(json.replace("%text%", "/start"), Update.class);
         SendResponse sendResponse =BotUtils.fromJson("""
@@ -53,8 +53,8 @@ public class TelegramBotUpdatesListenerTest {
         ArgumentCaptor<SendMessage>argumentCaptor= ArgumentCaptor.forClass(SendMessage.class);
         Mockito.verify(telegramBot).execute(argumentCaptor.capture());
         SendMessage actual=argumentCaptor.getValue();
-        Assertions.assertThat(actual.getParameters().get("char_id")).isEqualTo(update.message().chat().id());
-        Assertions.assertThat(actual.getParameters().get("text")).isEqualTo("Привет. Я помогу тебе спланировать задачу. " +
-                "Отправь в формате 12.06.2023 12:00 Сделать домашку");
+        Assertions.assertThat(actual.getParameters().get("chat_id")).isEqualTo(update.message().chat().id());
+        Assertions.assertThat(actual.getParameters().get("text")).isEqualTo("Привет! Я помогу запланировать задачу. " +
+                "Пожалуйста, отправьте её в следующем формате: 18.07.2023 22:00");
     }
 }
